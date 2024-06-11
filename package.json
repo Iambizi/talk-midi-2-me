@@ -3,11 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node server.js",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
+    "start": "NODE_ENV=production node server.js"
+},
   "dependencies": {
     "express": "^4.19.2",
     "langchain": "^0.2.5",

@@ -1,61 +1,60 @@
+// server.js
 const express = require('express');
+const next = require('next');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const midiFile = require('midi-file');
 
-const app = express();
+const dev = process.env.NODE_ENV !== 'production';
+const app = next({ dev });
+const handle = app.getRequestHandler();
+
 const storage = multer.diskStorage({
-  destination: './uploads/',
-  filename: function(req, file, cb){
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage: storage,
-  fileFilter: function(req, file, cb){
-    checkFileType(file, cb);
-  }
-}).single('midiFile');
-
-function checkFileType(file, cb){
-  const filetypes = /mid|midi/;
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = filetypes.test(file.mimetype);
-
-  if(mimetype && extname){
-    return cb(null,true);
-  } else {
-    cb('Error: MIDI Files Only!');
-  }
-}
-
-app.post('/upload', (req, res) => {
-  upload(req, res, (err) => {
-    if(err){
-      res.render('index', { msg: err });
-    } else if(req.file == undefined){
-      res.render('index', { msg: 'Error: No File Selected!' });
-    } else {
-      const filePath = `uploads/${req.file.filename}`;
-      fs.readFile(filePath, (err, data) => {
-        if (err) {
-          res.render('index', { msg: 'Error: Failed to read the MIDI file' });
-        } else {
-          const midiData = midiFile.parseMidi(data);
-          // You can now process the midiData as needed
-          console.log(midiData);
-          res.render('index', {
-            msg: 'File Uploaded and processed!',
-            file: filePath,
-            midiData: JSON.stringify(midiData, null, 2) // Displaying MIDI data in a readable format
-          });
-        }
-      });
+    destination: function(req, file, cb) {
+        cb(null, 'public/uploads/')
+    },
+    filename: function(req, file, cb) {
+        cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
     }
-  });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+const upload = multer({ storage: storage }).single('midiFile');
+
+app.prepare().then(() => {
+    const server = express();
+
+    server.use(express.static('public'));
+
+    server.post('/api/upload', (req, res) => {
+        upload(req, res, function(err) {
+            if (err instanceof multer.MulterError) {
+                return res.status(500).json(err);
+            } else if (err) {
+                return res.status(500).json(err);
+            }
+
+            const filePath = `public/uploads/${req.file.filename}`;
+            fs.readFile(filePath, (err, data) => {
+                if (err) {
+                    return res.status(500).send('Error processing file');
+                }
+                const midiData = midiFile.parseMidi(data);
+                console.log(midiData);
+                res.status(200).send({
+                    message: 'File uploaded and processed',
+                    midiData: midiData
+                });
+            });
+        });
+    });
+
+    server.all('*', (req, res) => {
+        return handle(req, res);
+    });
+
+    const PORT = process.env.PORT || 3000;
+    server.listen(PORT, () => {
+        console.log(`> Ready on http://localhost:${PORT}`);
+    });
+});

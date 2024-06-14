@@ -1,0 +1,30 @@
+/* midiPage.module.scss */
+.midiContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.title {
+    font-size: 2em;
+    color: #333;
+}
+
+.fileInput {
+    margin-top: 20px;
+    padding: 10px 20px;  // Adjust padding as needed to fit the button size
+    color: #fff; // Text color
+    text-align: center;
+    border: 2px solid red;
+    border-radius: 5px;
+    display: inline-block;
+    &:hover {
+        cursor: pointer;
+    }
+}
+
+.fileList {
+    margin-top: 20px;
+}

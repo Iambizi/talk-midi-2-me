@@ -19,6 +19,89 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage }).array("midiFiles", 10);
 
+const extractMidiData = (data) => {
+  const parsed = midiFile.parseMidi(data);
+
+  // Extract tempo
+  const tempoEvents = parsed.tracks.flatMap(track =>
+    track.filter(event => event.type === 'setTempo')
+  );
+  const tempos = tempoEvents.map(event => 60000000 / event.microsecondsPerBeat);
+
+  // Extract key signature
+  const keySignatureEvents = parsed.tracks.flatMap(track =>
+    track.filter(event => event.type === 'keySignature')
+  );
+  const keySignatures = keySignatureEvents.map(event => ({
+    key: event.key,
+    scale: event.scale === 0 ? 'major' : 'minor',
+  }));
+
+  // Extract instruments
+  const instrumentEvents = parsed.tracks.flatMap(track =>
+    track.filter(event => event.type === 'programChange')
+  );
+  const instruments = instrumentEvents.map(event => ({
+    channel: event.channel,
+    instrument: event.programNumber,
+    deltaTime: event.deltaTime,
+  }));
+
+  // Extract basic structure and identify potential sections
+  const noteEvents = parsed.tracks.flatMap(track =>
+    track.filter(event => event.type === 'noteOn' || event.type === 'noteOff')
+  );
+
+  const structure = noteEvents.map(event => ({
+    noteNumber: event.noteNumber,
+    velocity: event.velocity,
+    deltaTime: event.deltaTime,
+    type: event.type,
+  }));
+
+  // Simple heuristic to identify sections (chorus/bridge)
+  const sections = identifySections(noteEvents);
+
+  return { tempos, keySignatures, instruments, structure, sections };
+};
+
+const identifySections = (noteEvents) => {
+  // Placeholder for a more advanced section identification algorithm
+  // This heuristic identifies sections based on note density and pitch range
+
+  const sections = [];
+  let currentSection = [];
+  let lastTime = 0;
+  let noteCount = 0;
+
+  noteEvents.forEach((event, index) => {
+    if (event.type === 'noteOn') {
+      noteCount++;
+    }
+    currentSection.push(event);
+
+    // Identify potential section change based on note density
+    if (event.deltaTime - lastTime > 1000 || noteCount > 100) {
+      sections.push({
+        type: noteCount > 50 ? 'chorus' : 'verse',
+        events: currentSection,
+      });
+      currentSection = [];
+      noteCount = 0;
+    }
+    lastTime = event.deltaTime;
+  });
+
+  if (currentSection.length > 0) {
+    sections.push({
+      type: noteCount > 50 ? 'chorus' : 'verse',
+      events: currentSection,
+    });
+  }
+
+  return sections;
+};
+
 const processMidiFile = (file, callback) => {
   const filePath = `public/uploads/${file.filename}`;
   fs.readFile(filePath, (err, data) => {
@@ -27,7 +110,7 @@ const processMidiFile = (file, callback) => {
       return callback(err);
     }
     try {
-      const midiData = midiFile.parseMidi(data);
+      const midiData = extractMidiData(data);
       callback(null, { filePath, midiData });
     } catch (parseError) {
       console.error(

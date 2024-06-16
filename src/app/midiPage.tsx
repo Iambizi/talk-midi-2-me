@@ -8,8 +8,18 @@ import io, { Socket } from "socket.io-client";
 interface FileStatus {
     name: string;
     status: string;
-    details?: any;
+    details?: MidiDetails;
     error?: string;
+}
+
+interface MidiDetails {
+    midiData: {
+        tempos: number[];
+        keySignatures: Array<{ key: number; scale: string }>;
+        instruments: Array<{ channel: number; instrument: number; deltaTime: number }>;
+        structure: Array<{ noteNumber: number; velocity: number; deltaTime: number; type: string }>;
+        sections: Array<{ type: string; events: any[] }>;
+    };
 }
 
 // Define the interface for socket error
@@ -21,8 +31,7 @@ interface SocketError {
 
 export default function MidiInput() {
     const [filesStatus, setFilesStatus] = useState<FileStatus[]>([]); // To store and display file upload status
-    const socket: Socket = io('http://localhost:3000', { path: '/api/socket_io' });
-    // const socket: Socket = io('http://localhost:3000/api/socket_io');
+    const socket: Socket = io("http://localhost:3000", { path: "/api/socket_io" });
 
     // Log connection errors
     socket.on("connect_error", (err: SocketError) => {
@@ -48,7 +57,7 @@ export default function MidiInput() {
     });
 
     // Listen to file processing status from the server
-    socket.on("file-processed", (data: { file: string; data: any }) => {
+    socket.on("file-processed", (data: { file: string; data: MidiDetails }) => {
         console.log("Processing complete:", data);
         // Update the status of the processed file
         setFilesStatus((prevStatus) =>
@@ -130,6 +139,46 @@ export default function MidiInput() {
                 {filesStatus.map((file, index) => (
                     <li key={index}>
                         {file.name} - {file.status}
+                        {file.details && (
+                            <div>
+                                <h3>Tempo</h3>
+                                <ul>
+                                    {file.details.midiData.tempos.map((tempo, i) => (
+                                        <li key={i}>{tempo} BPM</li>
+                                    ))}
+                                </ul>
+                                <h3>Key Signatures</h3>
+                                <ul>
+                                    {file.details.midiData.keySignatures.map((key, i) => (
+                                        <li key={i}>{key.key} {key.scale}</li>
+                                    ))}
+                                </ul>
+                                <h3>Instruments</h3>
+                                <ul>
+                                    {file.details.midiData.instruments.map((instr, i) => (
+                                        <li key={i}>
+                                            Channel: {instr.channel}, Instrument: {instr.instrument}, Delta Time: {instr.deltaTime}
+                                        </li>
+                                    ))}
+                                </ul>
+                                <h3>Structure</h3>
+                                <ul>
+                                    {file.details.midiData.structure.map((note, i) => (
+                                        <li key={i}>
+                                            Note: {note.noteNumber}, Type: {note.type}, Velocity: {note.velocity}, Delta Time: {note.deltaTime}
+                                        </li>
+                                    ))}
+                                </ul>
+                                <h3>Sections</h3>
+                                <ul>
+                                    {file.details.midiData.sections.map((section, i) => (
+                                        <li key={i}>
+                                            Type: {section.type}, Events: {section.events.length}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
                     </li>
                 ))}
             </ul>

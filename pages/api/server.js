@@ -25,7 +25,7 @@ const upload = multer({ storage }).array('midiFiles', 10);
 
 app.prepare().then(() => {
   const server = createServer(handler);
-  const io = new SocketIOServer(server, { path: '/api/socket_io' });
+  const io = new SocketIOServer(server, { path: '/api/socket_io/'});
 
   // Set up a queue for processing MIDI files
   const midiQueue = async.queue((task, done) => {

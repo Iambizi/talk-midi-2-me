@@ -20,6 +20,7 @@
     "react": "^18",
     "react-dom": "^18",
     "sass": "^1.77.4",
+    "sendbird": "^3.1.33",
     "socket.io": "^4.7.5",
     "socket.io-client": "^4.7.5",
     "tone": "^15.0.4"

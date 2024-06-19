@@ -5,9 +5,8 @@ import styles from "./styling/midiPage.module.scss";
 import { io } from "socket.io-client";
 
 const socket = io("http://localhost:3000", {
-    path: "/api/socket_io",
-    addTrailingSlash: false
-  });
+    path: "/api/socket_io/"  
+});
 
 interface FileStatus {
     name: string;

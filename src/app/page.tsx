@@ -1,6 +1,8 @@
 import Image from "next/image";
 import styles from "./styling/page.module.css";
-import MidiInput from "./midiInput";
+import MidiInput from "./components/midiInput";
+import ChatComponent from './components/chatWidget';
+
 
 export default function Home() {
   return (
@@ -30,6 +32,7 @@ export default function Home() {
       </div>
       <div className={styles.center}>
         <MidiInput />
+        <ChatComponent />
       </div>
     </main>
   );

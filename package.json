@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@sendbird/chat-ai-widget": "^1.6.5",
     "async": "^3.2.5",
     "express": "^4.19.2",
     "langchain": "^0.2.5",
